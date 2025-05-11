@@ -78,7 +78,7 @@
   <div class="sidebar">
     <img src="Ratliff Logo.jpg" alt="Ratliff Electric Logo" style="max-width: 200px; margin-top: 10px;">
     <div class="nav-menu">
-      <a href="#" data-page="home">Dashboard</a>
+      <a href="javascript:void(0)" data-page="home">Dashboard</a>
       <a href="#" data-page="timesheet">Timesheet Management</a>
       <a href="#" data-page="tickets">Ticket Management</a>
       <a href="#" data-page="fileDownload">File Download</a>
@@ -99,76 +99,28 @@
     <span>Powered by Digital AI</span>
   </div>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      document.querySelectorAll('.nav-menu a').forEach(link => {
-        link.addEventListener('click', function (e) {
-          e.preventDefault();
-          const page = this.getAttribute('data-page');
-          showPage(page);
-        });
-      });
+function showPage(page) {
+  const main = document.getElementById('main-content');
+  if (!main) return;
 
-      const savedDays = localStorage.getItem('accidentDays');
-      const savedDate = localStorage.getItem('accidentDate');
-      if (savedDays && savedDate) {
-        const ticker = document.querySelector('.footer marquee');
-        const currentDate = new Date();
-        const lastDate = new Date(savedDate);
-        const diffDays = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
-        const updatedDays = parseInt(savedDays) + diffDays;
-        if (ticker) ticker.textContent = `${updatedDays} Day${updatedDays === 1 ? '' : 's'} Since The Last Accident`;
-        localStorage.setItem('accidentDays', updatedDays);
-        localStorage.setItem('accidentDate', currentDate.toISOString().split('T')[0]);
-      }
+  if (page === 'home') {
+    main.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+      <h1 style="text-align: center;">Welcome to Ratliff TimeLabs</h1>
+    </div>`;
+  } else if (page === 'timesheet') {
+    main.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2>Manage Timesheets</h2>
+      <div>
+        <button onclick="expandTimesheetForm()" style="margin-right: 10px; background-color: #28a745; color: white; padding: 8px 16px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer;">Create Timesheet</button>
+        <button style="background-color: #ffc107; color: black; padding: 8px 16px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer;">Edit Timesheet</button>
+      </div>
+    </div>`;
+    loadTimesheetTable();
+  }
+}
 
-      fetch('https://wttr.in/Texas?format=%C+%t')
-        .then(response => response.text())
-        .then(data => {
-          const box = document.getElementById('weather-box');
-          if (box) box.textContent = `Texas Weather: ${data}`;
-        })
-        .catch(() => {
-          const box = document.getElementById('weather-box');
-          if (box) box.textContent = 'Weather unavailable';
-        });
-    });
-
-    function showPage(page) {
-      const main = document.getElementById('main-content');
-      if (!main) return;
-
-      if (page === 'home') {
-        main.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-          <h1 style="text-align: center;">Welcome to Ratliff TimeLabs</h1>
-        </div>`;
-      } else if (page === 'timesheet') {
-        main.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2>Manage Timesheets</h2>
-          <div>
-            <button onclick="expandTimesheetForm()" style="margin-right: 10px; background-color: #28a745; color: white; padding: 8px 16px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer;">Create Timesheet</button>
-            <button style="background-color: #ffc107; color: black; padding: 8px 16px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer;">Edit Timesheet</button>
-          </div>
-        </div>`;
-        loadTimesheetTable();
-      }
-    }
-
-    function loadData(id, key) {
-      const table = document.getElementById(id).querySelector('tbody');
-      const data = JSON.parse(localStorage.getItem(key) || '[]');
-      table.innerHTML = '';
-      data.forEach(([col1, col2], i) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>${col1}</td><td>${col2}</td><td style='text-align: right;'>
-          <button style='margin-right: 5px;'>Edit</button>
-          <button>Delete</button>
-        </td>`;
-        if (i % 2 === 1) row.style.backgroundColor = '#e6f2ff';
-        table.appendChild(row);
-      });
-    }
-  function expandTimesheetForm() {
+function expandTimesheetForm() {
   const main = document.getElementById('main-content');
   if (!main) return;
   main.innerHTML = `
@@ -183,33 +135,80 @@
       <iframe width="100%" height="600" frameborder="0" scrolling="no" src="May 5-May 11 Daily Time.xlsx"></iframe>
     </div>`;
 }
+
 function saveTimesheet(event) {
   event.preventDefault();
-  const name = document.getElementById('ts-employee').value.trim();
-  const hours = document.getElementById('ts-hours').value.trim();
+  const name = document.getElementById('ts-employee')?.value.trim();
+  const hours = document.getElementById('ts-hours')?.value.trim();
   if (!name || !hours) return;
-  const saved = JSON.parse(localStorage.getItem('timesheets') || '[]');
-  saved.push({ name, hours });
-  localStorage.setItem('timesheets', JSON.stringify(saved));
-  alert('Timesheet saved!');
-  showPage('timesheet');
+
+  fetch('https://your-backend-url.onrender.com/api/timesheets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employee: name, hours: parseInt(hours) })
+  })
+  .then(res => res.json())
+  .then(() => {
+    alert('Timesheet saved!');
+    showPage('timesheet');
+  })
+  .catch(err => alert('Error saving timesheet: ' + err));
 }
 
 function loadTimesheetTable() {
-  const saved = JSON.parse(localStorage.getItem('timesheets') || '[]');
-  const container = document.createElement('div');
-  container.innerHTML = `
-    <h3 style="color: black; margin-top: 40px;">Saved Timesheets</h3>
-    <table style="width: 100%; border-collapse: collapse; background: white; color: black; border: 1px solid #ccc;">
-      <thead>
-        <tr style="background-color: #003366; color: white;"><th>Employee</th><th>Total Hours</th></tr>
-      </thead>
-      <tbody>
-        ${saved.map(entry => `<tr><td>${entry.name}</td><td>${entry.hours}</td></tr>`).join('') || '<tr><td colspan="2">No timesheets saved.</td></tr>'}
-      </tbody>
-    </table>`;
-  document.getElementById('main-content').appendChild(container);
+  fetch('https://your-backend-url.onrender.com/api/timesheets')
+    .then(res => res.json())
+    .then(saved => {
+      const container = document.createElement('div');
+      container.innerHTML = `
+        <h3 style="color: black; margin-top: 40px;">Saved Timesheets</h3>
+        <table style="width: 100%; border-collapse: collapse; background: white; color: black; border: 1px solid #ccc;">
+          <thead>
+            <tr style="background-color: #003366; color: white;"><th>Employee</th><th>Total Hours</th></tr>
+          </thead>
+          <tbody>
+            ${saved.map(entry => `<tr><td>${entry.employee}</td><td>${entry.hours}</td></tr>`).join('') || '<tr><td colspan="2">No timesheets saved.</td></tr>'}
+          </tbody>
+        </table>`;
+      document.getElementById('main-content').appendChild(container);
+    })
+    .catch(err => console.error('Failed to load timesheets:', err));
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.nav-menu a').forEach(link => {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      const page = this.getAttribute('data-page');
+      showPage(page);
+    });
+  });
+
+  const savedDays = localStorage.getItem('accidentDays');
+  const savedDate = localStorage.getItem('accidentDate');
+  if (savedDays && savedDate) {
+    const ticker = document.querySelector('.footer marquee');
+    const currentDate = new Date();
+    const lastDate = new Date(savedDate);
+    const diffDays = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+    const updatedDays = parseInt(savedDays) + diffDays;
+    if (ticker) ticker.textContent = `${updatedDays} Day${updatedDays === 1 ? '' : 's'} Since The Last Accident`;
+    localStorage.setItem('accidentDays', updatedDays);
+    localStorage.setItem('accidentDate', currentDate.toISOString().split('T')[0]);
+  }
+
+  fetch('https://wttr.in/Texas?format=%C+%t')
+    .then(response => response.text())
+    .then(data => {
+      const box = document.getElementById('weather-box');
+      if (box) box.textContent = `Texas Weather: ${data}`;
+    })
+    .catch(() => {
+      const box = document.getElementById('weather-box');
+      if (box) box.textContent = 'Weather unavailable';
+    });
+});
 </script>
 </body>
 </html>
+
